@@ -304,6 +304,18 @@ func (opts *SHCSOAccountCreateOptions) Params() (jsonutils.JSONObject, error) {
 	return params, nil
 }
 
+type SHCSAccountCreateOptions struct {
+	SCloudAccountCreateBaseOptions
+	AuthURL string `help:"Hcs auth_url" positional:"true" json:"auth_url"`
+	SAccessKeyCredential
+}
+
+func (opts *SHCSAccountCreateOptions) Params() (jsonutils.JSONObject, error) {
+	params := jsonutils.Marshal(opts)
+	params.(*jsonutils.JSONDict).Add(jsonutils.NewString("HCS"), "provider")
+	return params, nil
+}
+
 type SUcloudCloudAccountCreateOptions struct {
 	SCloudAccountCreateBaseOptions
 	SAccessKeyCredential
@@ -500,6 +512,15 @@ type SHCSOAccountUpdateCredentialOptions struct {
 }
 
 func (opts *SHCSOAccountUpdateCredentialOptions) Params() (jsonutils.JSONObject, error) {
+	return jsonutils.Marshal(opts), nil
+}
+
+type SHCSAccountUpdateCredentialOptions struct {
+	SCloudAccountIdOptions
+	SAccessKeyCredential
+}
+
+func (opts *SHCSAccountUpdateCredentialOptions) Params() (jsonutils.JSONObject, error) {
 	return jsonutils.Marshal(opts), nil
 }
 
@@ -849,6 +870,14 @@ type SHCSOAccountUpdateOptions struct {
 }
 
 func (opts *SHCSOAccountUpdateOptions) Params() (jsonutils.JSONObject, error) {
+	return jsonutils.Marshal(opts), nil
+}
+
+type SHCSAccountUpdateOptions struct {
+	SCloudAccountUpdateBaseOptions
+}
+
+func (opts *SHCSAccountUpdateOptions) Params() (jsonutils.JSONObject, error) {
 	return jsonutils.Marshal(opts), nil
 }
 
