@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"yunion.io/x/jsonutils"
-
 	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 	"yunion.io/x/onecloud/pkg/multicloud"
@@ -46,7 +45,7 @@ func (self *SHost) GetStatus() string {
 }
 
 func (self *SHost) GetIVMs() ([]cloudprovider.ICloudVM, error) {
-	vms, err := self.zone.region.GetInstances("")
+	vms, err := self.zone.region.GetInstances()
 	if err != nil {
 		return nil, err
 	}
