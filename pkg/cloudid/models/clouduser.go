@@ -1516,42 +1516,40 @@ func (self *SClouduser) SyncCustomCloudpoliciesForCloud(ctx context.Context, use
 func (self *SClouduser) PerformCreateAccessKey(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject, input api.ClouduserCreateAccessKeyInput) (jsonutils.JSONObject, error) {
 	user, err := self.GetIClouduser()
 	if err != nil {
-		return nil, errors.Wrapf(err, "GetIClouduser error")
+		return nil, errors.Wrapf(err, "GetIClouduser")
 	}
-	obj, err := user.PerformCreateAccessKey(input.Description)
+	obj, err := user.CreateAccessKey(input.Description)
 	if err != nil {
-		return nil, errors.Wrapf(err, "GetDetailsAccessKeys error")
+		return nil, errors.Wrapf(err, "CreateAccessKey")
 	}
-	return obj, nil
+	return jsonutils.Marshal(obj), nil
 }
 
 func (self *SClouduser) GetDetailsAccessKeys(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject) (jsonutils.JSONObject, error) {
 	user, err := self.GetIClouduser()
 	if err != nil {
-		return nil, errors.Wrapf(err, "GetIClouduser error")
+		return nil, errors.Wrapf(err, "GetIClouduser")
 	}
-	obj, err := user.GetDetailsAccessKeys()
+	obj, err := user.GetAccessKeys()
 	if err != nil {
-		return nil, errors.Wrapf(err, "GetDetailsAccessKeys error")
+		return nil, errors.Wrapf(err, "GetAccessKeys")
 	}
-	mid := make([]map[string]interface{}, 0)
-	obj.Unmarshal(&mid, "credentials")
-	res := make(map[string]interface{})
-	res["data"] = mid
-	res["total"] = len(mid)
-	res["limit"] = 20
-	result := jsonutils.Marshal(res)
-	return result, nil
+	ret := struct {
+		Data  []cloudprovider.SAccessKey
+		Total int
+		Limit int
+	}{
+		Data:  obj,
+		Total: len(obj),
+		Limit: 20,
+	}
+	return jsonutils.Marshal(ret), nil
 }
 
 func (self *SClouduser) PerformDeleteAccessKey(ctx context.Context, userCred mcclient.TokenCredential, query jsonutils.JSONObject, input api.ClouduserDeleteAccessKeyInput) (jsonutils.JSONObject, error) {
 	user, err := self.GetIClouduser()
 	if err != nil {
-		return nil, errors.Wrapf(err, "GetIClouduser error")
+		return nil, errors.Wrapf(err, "GetIClouduser")
 	}
-	obj, err := user.PerformDeleteAccessKey(input.AccessKey)
-	if err != nil {
-		return nil, errors.Wrapf(err, "GetDetailsAccessKeys error")
-	}
-	return obj, nil
+	return nil, user.DeleteAccessKey(input.AccessKey)
 }

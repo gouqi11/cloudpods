@@ -279,9 +279,11 @@ func (self *SHuaweiClient) modelartsResourceflavors(resource string, params map[
 	return self.request(httputils.GET, uri, url.Values{}, params)
 }
 
-func (self *SHuaweiClient) getAKSKList() (jsonutils.JSONObject, error) {
+func (self *SHuaweiClient) getAKSKList(userId string) (jsonutils.JSONObject, error) {
+	params := url.Values{}
+	params.Set("user_id", userId)
 	uri := fmt.Sprintf("https://iam.cn-north-4.myhuaweicloud.com/v3.0/OS-CREDENTIAL/credentials")
-	return self.request(httputils.GET, uri, url.Values{}, nil)
+	return self.request(httputils.GET, uri, params, nil)
 }
 
 func (self *SHuaweiClient) deleteAKSK(accesskey string) (jsonutils.JSONObject, error) {

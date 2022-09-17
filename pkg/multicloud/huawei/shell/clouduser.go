@@ -15,7 +15,6 @@
 package shell
 
 import (
-	"yunion.io/x/log"
 	"yunion.io/x/onecloud/pkg/multicloud/huawei"
 	"yunion.io/x/onecloud/pkg/util/shellutils"
 )
@@ -92,16 +91,18 @@ func init() {
 		ID string
 	}
 	shellutils.R(&ClouduserAKSKOptions{}, "aksk-list", "List AKSK", func(cli *huawei.SRegion, args *ClouduserAKSKOptions) error {
-		mid, err := cli.GetClient().GetAKSK()
-		log.Errorln(mid)
-		return err
+		ret, err := cli.GetClient().GetDetailsAccessKeys(args.ID)
+		if err != nil {
+			return err
+		}
+		printList(ret, 0, 0, 0, nil)
+		return nil
 	})
 	type ClouduserAKSKDeleteOptions struct {
 		AccessKey string
 	}
 	shellutils.R(&ClouduserAKSKDeleteOptions{}, "aksk-delete", "Delete AKSK", func(cli *huawei.SRegion, args *ClouduserAKSKDeleteOptions) error {
-		err := cli.GetClient().DeleteAKSK(args.AccessKey)
-		return err
+		return cli.GetClient().DeleteAKSK(args.AccessKey)
 	})
 
 	type AKSKCreateOption struct {
@@ -110,11 +111,11 @@ func init() {
 	}
 
 	shellutils.R(&AKSKCreateOption{}, "aksk-create", "List aksk", func(cli *huawei.SRegion, args *AKSKCreateOption) error {
-		res, err := cli.GetClient().CreateAKSK(args.Description)
+		ret, err := cli.GetClient().CreateAKSK(args.UserId, args.Description)
 		if err != nil {
 			return err
 		}
-		log.Errorln(res)
+		printObject(ret)
 		return nil
 	})
 }
