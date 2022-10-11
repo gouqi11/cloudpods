@@ -119,6 +119,38 @@ func (self *SRegion) ecsPerform(resource, action string, params map[string]inter
 	return self.client.ecsPerform(self.Id, resource, action, params, retVal)
 }
 
+func (region *SRegion) rdsList(resource string, query url.Values, retVal interface{}) error {
+	return region.client.rdsList(region.Id, resource, query, retVal)
+}
+
+func (region *SRegion) rdsGet(resource string, retVal interface{}) error {
+	return region.client.rdsGet(region.Id, resource, retVal)
+}
+
+func (region *SRegion) rdsDelete(resource string) error {
+	return region.client.rdsDelete(region.Id, resource)
+}
+
+func (region *SRegion) rdsCreate(resource string, body map[string]interface{}, retVal interface{}) error {
+	return region.client.rdsCreate(region.Id, resource, body, retVal)
+}
+
+func (self *SRegion) rdsPerform(resource, action string, params map[string]interface{}, retVal interface{}) error {
+	return self.client.rdsPerform(self.Id, resource, action, params, retVal)
+}
+
+func (region *SRegion) rdsJobGet(resource string, query url.Values, retVal interface{}) error {
+	return region.client.rdsJobGet(region.Id, resource, query, retVal)
+}
+
+func (region *SRegion) rdsDBPrivilegesDelete(resource string, params map[string]interface{}) error {
+	return region.client.rdsDBPrivvilegesDelete(region.Id, resource, params)
+}
+
+func (region *SRegion) rdsDBPrivilegesGrant(resource string, params map[string]interface{}, retVal interface{}) error {
+	return region.client.rdsDBPrivilegesGrant(region.Id, resource, params, retVal)
+}
+
 func (self *SRegion) perform(product, version, resource, action string, params map[string]interface{}, retVal interface{}) error {
 	return self.client.perform(product, version, self.Id, resource, action, params, retVal)
 }

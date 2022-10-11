@@ -307,6 +307,50 @@ func (self *SHcsClient) fetchRegions() error {
 	return resp.Unmarshal(&self.regions, "regions")
 }
 
+func (hcscli *SHcsClient) rdsList(regionId string, resource string, query url.Values, retVal interface{}) error {
+	return hcscli.list("rds", "v3", regionId, resource, query, retVal)
+}
+
+func (hcscli *SHcsClient) rdsGet(regionId string, resource string, retVal interface{}) error {
+	return hcscli.get("rds", "v3", regionId, resource, retVal)
+}
+
+func (hcscli *SHcsClient) rdsDelete(regionId string, resource string) error {
+	return hcscli._delete("rds", "v3", regionId, resource)
+}
+
+func (hcscli *SHcsClient) rdsCreate(regionId string, resource string, body map[string]interface{}, retVal interface{}) error {
+	return hcscli._create("rds", "v3", regionId, resource, body, retVal)
+}
+
+func (self *SHcsClient) rdsPerform(regionId string, resource, action string, params map[string]interface{}, retVal interface{}) error {
+	return self._perform("rds", "v3", regionId, resource, action, params, retVal)
+}
+
+func (hcscli *SHcsClient) rdsJobGet(regionId string, resource string, query url.Values, retVal interface{}) error {
+	url := hcscli._url("rds", "v3", regionId, resource)
+	resp, err := hcscli.request(httputils.GET, url, query, nil)
+	if err != nil {
+		return err
+	}
+	err = resp.Unmarshal(retVal)
+	return err
+}
+
+func (hcscli *SHcsClient) rdsDBPrivvilegesDelete(regionId string, resource string, params map[string]interface{}) error {
+	return hcscli._deleteWithBody("rds", "v3", regionId, resource, params)
+}
+
+func (hcscli *SHcsClient) rdsDBPrivilegesGrant(regionId string, resource string, params map[string]interface{}, retVal interface{}) error {
+	url := hcscli._url("rds", "v3", regionId, resource)
+	resp, err := hcscli.request(httputils.GET, url, nil, params)
+	if err != nil {
+		return err
+	}
+	err = resp.Unmarshal(retVal)
+	return err
+}
+
 func (self *SHcsClient) ecsList(regionId string, resource string, query url.Values, retVal interface{}) error {
 	return self.list("ecs", "v2", regionId, resource, query, retVal)
 }
@@ -487,6 +531,12 @@ func (self *SHcsClient) delete(product, version, regionId string, resource strin
 func (self *SHcsClient) _delete(product, version, regionId string, resource string) error {
 	url := self._url(product, version, regionId, resource)
 	_, err := self.request(httputils.DELETE, url, nil, nil)
+	return err
+}
+
+func (self *SHcsClient) _deleteWithBody(product, version, regionId string, resource string, params map[string]interface{}) error {
+	url := self._url(product, version, regionId, resource)
+	_, err := self.request(httputils.DELETE, url, nil, params)
 	return err
 }
 
