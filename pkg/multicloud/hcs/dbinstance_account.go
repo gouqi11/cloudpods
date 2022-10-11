@@ -16,8 +16,7 @@ package hcs
 
 import (
 	"fmt"
-
-	"yunion.io/x/jsonutils"
+	"net/url"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
 	"yunion.io/x/onecloud/pkg/cloudprovider"
@@ -36,15 +35,11 @@ func (account *SDBInstanceAccount) GetName() string {
 }
 
 func (account *SDBInstanceAccount) Delete() error {
-	return account.instance.region.DeleteDBInstanceAccount(account.instance.Id, account.Name)
-}
-
-func (region *SRegion) DeleteDBInstanceAccount(instanceId string, account string) error {
-	return DoDeleteWithSpec(region.ecsClient.DBInstance.DeleteInContextWithSpec, nil, instanceId, fmt.Sprintf("db_user/%s", account), nil, nil)
+	return account.instance.region.rdsDBUserDelete(fmt.Sprintf("%s/db_user/%s", account.instance.Id, account.Name))
 }
 
 func (account *SDBInstanceAccount) GetIDBInstanceAccountPrivileges() ([]cloudprovider.ICloudDBInstanceAccountPrivilege, error) {
-	privileges, err := account.instance.region.GetDBInstancePrivvileges(account.instance.Id, account.Name)
+	privileges, err := account.instance.region.GetDBInstancePrivileges(account.instance.Id, account.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -57,24 +52,19 @@ func (account *SDBInstanceAccount) GetIDBInstanceAccountPrivileges() ([]cloudpro
 }
 
 func (region *SRegion) GetDBInstanceAccounts(instanceId string) ([]SDBInstanceAccount, error) {
-	params := map[string]string{
-		"instance_id": instanceId,
-	}
 	accounts := []SDBInstanceAccount{}
-	err := doListAllWithPage(region.ecsClient.DBInstance.ListAccounts, params, &accounts)
+	err := region.rdsDBUserList(fmt.Sprintf("instances/%s/db_user/detail", instanceId), nil, accounts)
 	if err != nil {
 		return nil, err
 	}
 	return accounts, nil
 }
 
-func (region *SRegion) GetDBInstancePrivvileges(instanceId string, username string) ([]SDatabasePrivilege, error) {
-	params := map[string]string{
-		"instance_id": instanceId,
-		"user-name":   username,
-	}
+func (region *SRegion) GetDBInstancePrivileges(instanceId string, username string) ([]SDatabasePrivilege, error) {
+	query := url.Values{}
+	query.Add("iser-name", username)
 	privileges := []SDatabasePrivilege{}
-	err := doListAllWithPage(region.ecsClient.DBInstance.ListPrivileges, params, &privileges)
+	err := region.rdsDBPrivvilegesList(fmt.Sprintf("instances/%s/db_user/database", instanceId), query, privileges)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +84,7 @@ func (region *SRegion) RevokeDBInstancePrivilege(instanceId string, account, dat
 			},
 		},
 	}
-	return DoDeleteWithSpec(region.ecsClient.DBInstance.DeleteInContextWithSpec, nil, instanceId, "db_privilege", nil, jsonutils.Marshal(params))
+	return region.rdsDBPrivilegesDelete(fmt.Sprintf("instances/%s/db_privilege", instanceId), params)
 }
 
 func (account *SDBInstanceAccount) GrantPrivilege(database, privilege string) error {
@@ -119,7 +109,10 @@ func (region *SRegion) GrantDBInstancePrivilege(instanceId string, account, data
 			},
 		},
 	}
-	_, err := region.ecsClient.DBInstance.PerformAction("db_privilege", instanceId, jsonutils.Marshal(params))
+	resp := &struct {
+		Resp string
+	}{}
+	err := region.rdsDBPrivilegesGrant(fmt.Sprintf("instances/%s/db_privilege", instanceId), params, resp)
 	return err
 }
 

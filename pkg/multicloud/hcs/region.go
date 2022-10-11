@@ -119,6 +119,82 @@ func (self *SRegion) ecsPerform(resource, action string, params map[string]inter
 	return self.client.ecsPerform(self.Id, resource, action, params, retVal)
 }
 
+func (self *SRegion) rdsList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsGet(resource string, retVal interface{}) error {
+	return self.client.rdsGet(self.Id, resource, retVal)
+}
+
+func (self *SRegion) rdsDelete(resource string) error {
+	return self.client.rdsDelete(self.Id, resource)
+}
+
+func (self *SRegion) rdsCreate(resource string, body map[string]interface{}, retVal interface{}) error {
+	return self.client.rdsCreate(self.Id, resource, body, retVal)
+}
+
+func (self *SRegion) rdsJobGet(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsJobGet(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsFlavorList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsFlavorList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsDatastoresList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsDatastoresList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsStorageTypeList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsStorageTypeList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsParameterList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsParameterList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsDBList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsDBList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsDBDelete(resource string) error {
+	return self.client.rdsDBDelete(self.Id, resource)
+}
+
+func (self *SRegion) rdsBackupDelete(resource string) error {
+	return self.client.rdsBackupDelete(self.Id, resource)
+}
+
+func (self *SRegion) rdsBackupList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsBackupList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsBackupCreate(resource string, body map[string]interface{}, retVal interface{}) error {
+	return self.client.rdsBackupCreate(self.Id, resource, body, retVal)
+}
+
+func (self *SRegion) rdsDBUserDelete(resource string) error {
+	return self.client.rdsDBUserDelete(self.Id, resource)
+}
+
+func (self *SRegion) rdsDBUserList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsDBUserList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsDBPrivvilegesList(resource string, query url.Values, retVal interface{}) error {
+	return self.client.rdsDBPrivvilegesList(self.Id, resource, query, retVal)
+}
+
+func (self *SRegion) rdsDBPrivilegesDelete(resource string, params map[string]interface{}) error {
+	return self.client.rdsDBPrivvilegesDelete(self.Id, resource, params)
+}
+
+func (self *SRegion) rdsDBPrivilegesGrant(resource string, params map[string]interface{}, retVal interface{}) error {
+	return self.client.rdsDBPrivilegesGrant(self.Id, resource, params, retVal)
+}
+
 func (self *SRegion) perform(product, version, resource, action string, params map[string]interface{}, retVal interface{}) error {
 	return self.client.perform(product, version, self.Id, resource, action, params, retVal)
 }

@@ -45,7 +45,7 @@ func (self *SHost) GetStatus() string {
 }
 
 func (self *SHost) GetIVMs() ([]cloudprovider.ICloudVM, error) {
-	vms, err := self.zone.region.GetInstances()
+	vms, err := self.zone.region.GetInstances("")
 	if err != nil {
 		return nil, err
 	}

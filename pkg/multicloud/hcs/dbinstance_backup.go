@@ -15,6 +15,8 @@
 package hcs
 
 import (
+	"fmt"
+	"net/url"
 	"time"
 
 	"yunion.io/x/jsonutils"
@@ -115,7 +117,7 @@ func (backup *SDBInstanceBackup) Delete() error {
 }
 
 func (region *SRegion) DeleteDBInstanceBackup(backupId string) error {
-	_, err := region.ecsClient.DBInstanceBackup.Delete(backupId, nil)
+	err := region.rdsBackupDelete(fmt.Sprintf("backups/%s", backupId))
 	return err
 }
 
@@ -124,14 +126,13 @@ func (backup *SDBInstanceBackup) GetDBInstanceId() string {
 }
 
 func (region *SRegion) GetDBInstanceBackups(instanceId, backupId string) ([]SDBInstanceBackup, error) {
-	params := map[string]string{
-		"instance_id": instanceId,
-	}
+	query := url.Values{}
+	query.Add("instance_id", instanceId)
 	if len(backupId) > 0 {
-		params["backup_id"] = backupId
+		query.Add("backup_id", backupId)
 	}
 	backups := []SDBInstanceBackup{}
-	err := doListAllWithOffset(region.ecsClient.DBInstanceBackup.List, params, &backups)
+	err := region.rdsBackupList("offsite-backups", query, backups)
 	if err != nil {
 		return nil, err
 	}
@@ -219,11 +220,12 @@ func (region *SRegion) CreateDBInstanceBackup(instanceId string, name string, de
 		}
 		params["databases"] = dbs
 	}
-	resp, err := region.ecsClient.DBInstanceBackup.Create(jsonutils.Marshal(params))
+	backup := SDBInstanceBackup{}
+	err := region.rdsBackupCreate("backups", params, backup)
 	if err != nil {
 		return "", errors.Wrap(err, "DBInstanceBackup.Create")
 	}
-	backupId, err := resp.GetString("id")
+	backupId := backup.Id
 	if err != nil {
 		return "", errors.Wrap(err, "resp.GetBackupId")
 	}

@@ -55,16 +55,16 @@ func (database *SDBInstanceDatabase) Delete() error {
 }
 
 func (region *SRegion) DeleteDBInstanceDatabase(instanceId, database string) error {
-	_, err := region.ecsClient.DBInstance.DeleteInContextWithSpec(nil, instanceId, fmt.Sprintf("database/%s", database), nil, nil, "")
+	resource := fmt.Sprintf("instances/%s/database/%s", instanceId, database)
+	err := region.rdsDBDelete(resource)
 	return err
 }
 
+// rds查询数据库列表
 func (region *SRegion) GetDBInstanceDatabases(instanceId string) ([]SDBInstanceDatabase, error) {
-	params := map[string]string{
-		"instance_id": instanceId,
-	}
+	resource := fmt.Sprintf("%s/database/detail", instanceId)
 	databases := []SDBInstanceDatabase{}
-	err := doListAllWithPage(region.ecsClient.DBInstance.ListDatabases, params, &databases)
+	err := region.rdsDBList(resource, nil, databases)
 	if err != nil {
 		return nil, err
 	}

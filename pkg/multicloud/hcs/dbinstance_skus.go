@@ -16,9 +16,9 @@ package hcs
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
-	"yunion.io/x/jsonutils"
 	"yunion.io/x/pkg/errors"
 
 	api "yunion.io/x/onecloud/pkg/apis/compute"
@@ -230,22 +230,28 @@ func (self *SRegion) GetDBInstanceSkus() ([]SDBInstanceFlavor, error) {
 	return skus, nil
 }
 
+// rds规格信息
 func (region *SRegion) GetDBInstanceFlavors(engine string, version string) ([]SDBInstanceFlavor, error) {
 	flavors := []SDBInstanceFlavor{}
-	resp, err := region.ecsClient.DBInstanceFlavor.ListInContextWithSpec(nil, engine, map[string]string{"version_name": version}, "flavors")
+	query := url.Values{}
+	query.Add("version_name", version)
+	resource := fmt.Sprintf("%s/%s", "flavor", engine)
+	err := region.rdsFlavorList(resource, query, flavors)
 	if err != nil {
 		return nil, err
 	}
-	return flavors, jsonutils.Update(&flavors, resp.Data)
+	return flavors, nil
 }
 
+// rds数据库引擎版本信息
 func (region *SRegion) GetDBInstanceDatastores(engine string) ([]SDBInstanceDatastore, error) {
 	stores := []SDBInstanceDatastore{}
-	resp, err := region.ecsClient.DBInstanceDatastore.ListInContextWithSpec(nil, engine, nil, region.ecsClient.DBInstanceDatastore.KeywordPlural)
+	resource := fmt.Sprintf("%s/%s", "datastores", engine)
+	err := region.rdsDatastoresList(resource, nil, stores)
 	if err != nil {
 		return nil, err
 	}
-	return stores, jsonutils.Update(&stores, resp.Data)
+	return stores, nil
 }
 
 type SDBInstanceStorage struct {
@@ -253,11 +259,15 @@ type SDBInstanceStorage struct {
 	AzStatus map[string]string
 }
 
+// rds数据库磁盘类型
 func (region *SRegion) GetDBInstanceStorages(engine, engineVersion string) ([]SDBInstanceStorage, error) {
 	storages := []SDBInstanceStorage{}
-	resp, err := region.ecsClient.DBInstanceStorage.ListInContextWithSpec(nil, engine, map[string]string{"version_name": engineVersion}, region.ecsClient.DBInstanceStorage.KeywordPlural)
+	resource := fmt.Sprintf("%s/%s", "storage-type", engine)
+	query := url.Values{}
+	query.Add("version_name", engineVersion)
+	err := region.rdsStorageTypeList(resource, query, storages)
 	if err != nil {
 		return nil, err
 	}
-	return storages, jsonutils.Update(&storages, resp.Data)
+	return storages, nil
 }

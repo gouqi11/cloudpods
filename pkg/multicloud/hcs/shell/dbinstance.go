@@ -15,7 +15,7 @@
 package shell
 
 import (
-	huawei "yunion.io/x/onecloud/pkg/multicloud/hcso"
+	huawei "yunion.io/x/onecloud/pkg/multicloud/hcs"
 	"yunion.io/x/onecloud/pkg/util/shellutils"
 )
 
@@ -30,68 +30,68 @@ func init() {
 		printList(dbinstances, 0, 0, 0, nil)
 		return nil
 	})
-
-	type DBInstanceIdOptions struct {
-		ID string `help:"DBInstance ID"`
-	}
-
-	shellutils.R(&DBInstanceIdOptions{}, "dbinstance-open-public-connection", "Open dbinstance public connection", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
-		return cli.PublicConnectionAction(args.ID, "openRC")
-	})
-
-	shellutils.R(&DBInstanceIdOptions{}, "dbinstance-close-public-connection", "Close dbinstance public connection", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
-		return cli.PublicConnectionAction(args.ID, "closeRC")
-	})
-
-	shellutils.R(&DBInstanceIdOptions{}, "dbinstance-show", "Show dbinstance", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
-		dbinstance, err := cli.GetDBInstance(args.ID)
-		if err != nil {
-			return err
+	/*
+		type DBInstanceIdOptions struct {
+			ID string `help:"DBInstance ID"`
 		}
-		printObject(dbinstance)
-		return nil
-	})
 
-	shellutils.R(&DBInstanceIdOptions{}, "dbinstance-parameter-list", "Show dbinstance parameters", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
-		parameters, err := cli.GetDBInstanceParameters(args.ID)
-		if err != nil {
-			return err
+		shellutils.R(&DBInstanceIdOptions{}, "dbinstance-open-public-connection", "Open dbinstance public connection", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
+			return cli.PublicConnectionAction(args.ID, "openRC")
+		})
+
+		shellutils.R(&DBInstanceIdOptions{}, "dbinstance-close-public-connection", "Close dbinstance public connection", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
+			return cli.PublicConnectionAction(args.ID, "closeRC")
+		})
+
+		shellutils.R(&DBInstanceIdOptions{}, "dbinstance-show", "Show dbinstance", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
+			dbinstance, err := cli.GetDBInstance(args.ID)
+			if err != nil {
+				return err
+			}
+			printObject(dbinstance)
+			return nil
+		})
+
+		shellutils.R(&DBInstanceIdOptions{}, "dbinstance-parameter-list", "Show dbinstance parameters", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
+			parameters, err := cli.GetDBInstanceParameters(args.ID)
+			if err != nil {
+				return err
+			}
+			printList(parameters, 0, 0, 0, nil)
+			return nil
+		})
+
+		shellutils.R(&DBInstanceIdOptions{}, "dbinstance-backup-list", "Show dbinstance backups", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
+			backups, err := cli.GetDBInstanceBackups(args.ID, "")
+			if err != nil {
+				return err
+			}
+			printList(backups, 0, 0, 0, nil)
+			return nil
+		})
+
+		type DBInstanceFlavorListOption struct {
+			ENGINE  string `help:"DBInstance engine" choices:"MySQL|SQLServer|PostgreSQL"`
+			VERSION string `help:"DBInstance engine version" choices:"5.6|5.7|9.5|9.6|10.0|2014 SE|2014 EE|2016 SE|2016 EE|2008 R2 EE|2008 R2 WEB|2014 WEB|2016 WEB"`
 		}
-		printList(parameters, 0, 0, 0, nil)
-		return nil
-	})
 
-	shellutils.R(&DBInstanceIdOptions{}, "dbinstance-backup-list", "Show dbinstance backups", func(cli *huawei.SRegion, args *DBInstanceIdOptions) error {
-		backups, err := cli.GetDBInstanceBackups(args.ID, "")
-		if err != nil {
-			return err
+		shellutils.R(&DBInstanceFlavorListOption{}, "dbinstance-flavor-list", "Show dbinstance backups", func(cli *huawei.SRegion, args *DBInstanceFlavorListOption) error {
+			flavors, err := cli.GetDBInstanceFlavors(args.ENGINE, args.VERSION)
+			if err != nil {
+				return err
+			}
+			printList(flavors, 0, 0, 0, nil)
+			return nil
+		})
+
+		type DBInstanceChangeConfigOptions struct {
+			INSTANCE     string
+			InstanceType string
+			DiskSizeGB   int
 		}
-		printList(backups, 0, 0, 0, nil)
-		return nil
-	})
 
-	type DBInstanceFlavorListOption struct {
-		ENGINE  string `help:"DBInstance engine" choices:"MySQL|SQLServer|PostgreSQL"`
-		VERSION string `help:"DBInstance engine version" choices:"5.6|5.7|9.5|9.6|10.0|2014 SE|2014 EE|2016 SE|2016 EE|2008 R2 EE|2008 R2 WEB|2014 WEB|2016 WEB"`
-	}
-
-	shellutils.R(&DBInstanceFlavorListOption{}, "dbinstance-flavor-list", "Show dbinstance backups", func(cli *huawei.SRegion, args *DBInstanceFlavorListOption) error {
-		flavors, err := cli.GetDBInstanceFlavors(args.ENGINE, args.VERSION)
-		if err != nil {
-			return err
-		}
-		printList(flavors, 0, 0, 0, nil)
-		return nil
-	})
-
-	type DBInstanceChangeConfigOptions struct {
-		INSTANCE     string
-		InstanceType string
-		DiskSizeGB   int
-	}
-
-	shellutils.R(&DBInstanceChangeConfigOptions{}, "dbinstance-change-config", "Change dbinstance config", func(cli *huawei.SRegion, args *DBInstanceChangeConfigOptions) error {
-		return cli.ChangeDBInstanceConfig(args.INSTANCE, args.InstanceType, args.DiskSizeGB)
-	})
-
+		shellutils.R(&DBInstanceChangeConfigOptions{}, "dbinstance-change-config", "Change dbinstance config", func(cli *huawei.SRegion, args *DBInstanceChangeConfigOptions) error {
+			return cli.ChangeDBInstanceConfig(args.INSTANCE, args.InstanceType, args.DiskSizeGB)
+		})
+	*/
 }

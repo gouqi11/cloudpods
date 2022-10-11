@@ -17,6 +17,7 @@ package hcs
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
@@ -29,6 +30,7 @@ import (
 	"yunion.io/x/onecloud/pkg/cloudprovider"
 	"yunion.io/x/onecloud/pkg/multicloud"
 	"yunion.io/x/onecloud/pkg/util/billing"
+	"yunion.io/x/onecloud/pkg/util/httputils"
 )
 
 type SBackupStrategy struct {
@@ -99,9 +101,8 @@ type SDBInstance struct {
 }
 
 func (region *SRegion) GetDBInstances() ([]SDBInstance, error) {
-	params := map[string]string{}
 	dbinstances := []SDBInstance{}
-	err := doListAllWithOffset(region.ecsClient.DBInstance.List, params, &dbinstances)
+	err := region.rdsList("instances", nil, nil)
 	return dbinstances, err
 }
 
@@ -110,7 +111,8 @@ func (region *SRegion) GetDBInstance(instanceId string) (*SDBInstance, error) {
 		return nil, cloudprovider.ErrNotFound
 	}
 	instance := SDBInstance{region: region}
-	err := DoGet(region.ecsClient.DBInstance.Get, instanceId, nil, &instance)
+	res := &SDBInstance{}
+	err := region.rdsGet(fmt.Sprintf("instance/%s", instanceId), res)
 	return &instance, err
 }
 
@@ -281,16 +283,16 @@ func (rds *SDBInstance) GetZone1Id() string {
 }
 
 func (rds *SDBInstance) GetZoneIdByRole(role string) string {
-	for _, node := range rds.Nodes {
-		if node.Role == role {
-			zone, err := rds.region.getZoneById(node.AvailabilityZone)
-			if err != nil {
-				log.Errorf("failed to found zone %s for rds %s error: %v", node.AvailabilityZone, rds.Name, err)
-				return ""
-			}
-			return zone.GetGlobalId()
-		}
-	}
+	// for _, node := range rds.Nodes {
+	// 	if node.Role == role {
+	// 		zone, err := rds.region.getZoneById(node.AvailabilityZone)
+	// 		if err != nil {
+	// 			log.Errorf("failed to found zone %s for rds %s error: %v", node.AvailabilityZone, rds.Name, err)
+	// 			return ""
+	// 		}
+	// 		return zone.GetGlobalId()
+	// 	}
+	// }
 	return ""
 }
 
@@ -409,7 +411,7 @@ func (rds *SDBInstance) Delete() error {
 }
 
 func (region *SRegion) DeleteDBInstance(instanceId string) error {
-	_, err := region.ecsClient.DBInstance.Delete(instanceId, nil)
+	err := region.client.rdsDelete(region.Id, instanceId)
 	return err
 }
 
@@ -428,7 +430,7 @@ func (region *SRegion) CreateIDBInstance(desc *cloudprovider.SManagedDBInstanceC
 	}
 
 	params := map[string]interface{}{
-		"region": region.ID,
+		"region": region.Id,
 		"name":   desc.Name,
 		"datastore": map[string]string{
 			"type":    desc.Engine,
@@ -495,7 +497,7 @@ func (region *SRegion) CreateIDBInstance(desc *cloudprovider.SManagedDBInstanceC
 	}
 	params["flavor_ref"] = desc.InstanceType
 	params["availability_zone"] = desc.ZoneId
-	resp, err := region.ecsClient.DBInstance.Create(jsonutils.Marshal(params))
+	resp, err := region.client.request(httputils.POST, region.client._url("instance", "v3", region.Id, "instance"), nil, params)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Create")
 	}
@@ -507,7 +509,8 @@ func (region *SRegion) CreateIDBInstance(desc *cloudprovider.SManagedDBInstanceC
 	}
 	if jobId, _ := resp.GetString("job_id"); len(jobId) > 0 {
 		err = cloudprovider.Wait(10*time.Second, 20*time.Minute, func() (bool, error) {
-			job, err := region.ecsClient.DBInstanceJob.Get(jobId, map[string]string{"id": jobId})
+
+			job, err := region.client.request(httputils.POST, region.client._url(fmt.Sprintf("instance/%s", jobId), "v3", region.Id, "instance"), nil, params)
 			if err != nil {
 				return false, nil
 			}
@@ -527,7 +530,8 @@ func (region *SRegion) CreateIDBInstance(desc *cloudprovider.SManagedDBInstanceC
 }
 
 func (rds *SDBInstance) Reboot() error {
-	return rds.region.RebootDBInstance(rds.Id)
+	// return rds.region.RebootDBInstance(rds.Id)
+	return nil
 }
 
 func (rds *SDBInstance) OpenPublicConnection() error {
@@ -548,17 +552,21 @@ func (region *SRegion) PublicConnectionAction(instanceId string, action string) 
 
 	if jobId, _ := resp.GetString("job_id"); len(jobId) > 0 {
 		err = cloudprovider.WaitCreated(10*time.Second, 20*time.Minute, func() bool {
-			job, err := region.ecsClient.DBInstanceJob.Get(jobId, map[string]string{"id": jobId})
+			job := struct {
+				Status  string
+				Process string
+			}{}
+			query := url.Values{}
+			query.Add("id", jobId)
+			err := region.rdsJobGet("jobs", query, job)
 			if err != nil {
 				log.Errorf("failed to get job %s info error: %v", jobId, err)
 				return false
 			}
-			status, _ := job.GetString("status")
-			process, _ := job.GetString("process")
-			if status == "Completed" {
+			if job.Status == "Completed" {
 				return true
 			}
-			log.Debugf("%s dbinstance job %s status: %s process: %s", action, jobId, status, process)
+			log.Debugf("%s dbinstance job %s status: %s process: %s", action, jobId, job.Status, job.Process)
 			return false
 		})
 	}
@@ -577,17 +585,21 @@ func (region *SRegion) RebootDBInstance(instanceId string) error {
 	}
 	if jobId, _ := resp.GetString("job_id"); len(jobId) > 0 {
 		err = cloudprovider.WaitCreated(10*time.Second, 20*time.Minute, func() bool {
-			job, err := region.ecsClient.DBInstanceJob.Get(jobId, map[string]string{"id": jobId})
+			job := struct {
+				Status  string
+				Process string
+			}{}
+			query := url.Values{}
+			query.Add("id", jobId)
+			err := region.rdsJobGet("jobs", query, job)
 			if err != nil {
 				log.Errorf("failed to get job %s info error: %v", jobId, err)
 				return false
 			}
-			status, _ := job.GetString("status")
-			process, _ := job.GetString("process")
-			if status == "Completed" {
+			if job.Status == "Completed" {
 				return true
 			}
-			log.Debugf("reboot dbinstance job %s status: %s process: %s", jobId, status, process)
+			log.Debugf("%s dbinstance job %s status: %s process: %s", action, jobId, job.Status, job.Process)
 			return false
 		})
 	}

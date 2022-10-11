@@ -27,11 +27,8 @@ type SDBInstanceParameter struct {
 }
 
 func (region *SRegion) GetDBInstanceParameters(dbinstanceId string) ([]SDBInstanceParameter, error) {
-	params := map[string]string{
-		"instance_id": dbinstanceId,
-	}
 	paramters := []SDBInstanceParameter{}
-	err := doListAll(region.ecsClient.DBInstance.ListParameters, params, &paramters)
+	err := region.rdsParameterList("configurations", nil, paramters)
 	if err != nil {
 		return nil, err
 	}
