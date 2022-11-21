@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 
 	billing_api "yunion.io/x/onecloud/pkg/apis/billing"
@@ -157,6 +158,7 @@ func (self *SRegion) CreateIModelartsPool(args *cloudprovider.ModelartsPoolCreat
 			}
 			netStatus, _ := netDetailObj.GetString("status", "phase")
 			if netStatus == "Creating" {
+				log.Errorln("this is Sleep")
 				time.Sleep(10 * time.Second)
 			} else {
 				break
