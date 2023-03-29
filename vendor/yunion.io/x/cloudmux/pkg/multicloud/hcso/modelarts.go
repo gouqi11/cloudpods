@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"yunion.io/x/jsonutils"
+	"yunion.io/x/log"
 	"yunion.io/x/pkg/errors"
 	"yunion.io/x/pkg/util/billing"
 
@@ -317,12 +318,18 @@ func (self *SModelartsPool) GetName() string {
 func (self *SModelartsPool) GetStatus() string {
 	res := strings.ToLower(self.Status.Phase)
 	switch {
-	case res == compute.MODELARTS_POOL_STATUS_RUNNING && len(self.Status.Resource.Creating) != 0:
+	case res == compute.MODELARTS_POOL_STATUS_RUNNING && len(self.Status.Resource.Abnormal) == 0 && len(self.Status.Resource.Creating) == 0:
+		res = compute.MODELARTS_POOL_STATUS_RUNNING
+	case res == compute.MODELARTS_POOL_STATUS_DELETING:
+		res = compute.MODELARTS_POOL_STATUS_DELETING
+	case (res == compute.MODELARTS_POOL_STATUS_RUNNING && len(self.Status.Resource.Creating) != 0) || res == compute.MODELARTS_POOL_STATUS_CREATING:
 		res = compute.MODELARTS_POOL_STATUS_CREATING
 	case self.Status.Phase == "CreationFailed":
 		res = compute.MODELARTS_POOL_STATUS_CREATE_FAILED
 	case self.Status.Phase == "SeclingFailed":
 		res = compute.MODELARTS_POOL_STATUS_CHANGE_CONFIG_FAILED
+	default:
+		res = compute.MODELARTS_POOL_STATUS_UNKNOWN
 	}
 	return res
 }
@@ -373,26 +380,34 @@ func (self *SModelartsPool) SetAutoRenew(bc billing.SBillingCycle) error {
 }
 
 func (self *SModelartsPool) Refresh() error {
+	self.Status.Resource = SNodeStatus{}
+	pool, err := self.region.client.modelartsPoolById(self.GetId())
+	if err == nil {
+		pool.Unmarshal(self)
+		return nil
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		log.Infoln("this is !strings.Contains(err.Error(), not found): ", err)
+		return errors.Wrap(err, "modelartsPoolById")
+	}
 	pools := make([]SModelartsPool, 0)
 	resObj, err := self.region.client.modelartsPoolListWithStatus("pools", "failed", nil)
 	if err != nil {
+		log.Infoln("this is modelartsPoolListWithStatus:", err)
 		return errors.Wrap(err, "modelartsPoolListWithStatus")
 	}
 	err = resObj.Unmarshal(&pools, "items")
 	if err != nil {
+		log.Infoln("this is unmarshal:", jsonutils.Marshal(pools))
 		return errors.Wrap(err, "resObj unmarshal")
 	}
 	for _, pool := range pools {
 		if pool.GetId() == self.GetId() {
 			self.Status.Phase = "CreationFailed"
+			return jsonutils.Update(self, pool)
 		}
 	}
-	self.Status.Resource = SNodeStatus{}
-	pool, err := self.region.client.modelartsPoolById(self.GetId())
-	if err != nil {
-		return errors.Wrapf(err, "GetModelartsPool(%s)", self.GetId())
-	}
-	return jsonutils.Update(self, pool)
+	return nil
 }
 
 func (self *SModelartsPool) SetTags(tags map[string]string, replace bool) error {

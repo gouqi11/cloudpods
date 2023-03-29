@@ -230,3 +230,20 @@ type LoadbalancerDissociateEipInput struct {
 	// 是否自动释放
 	AudoDelete *bool `json:"auto_delete"`
 }
+
+func (lb *LoadbalancerDetails) GetMetricTags() map[string]string {
+	ret := map[string]string{
+		"id":             lb.Id,
+		"cloudregion":    lb.Cloudregion,
+		"domain_id":      lb.DomainId,
+		"slb_id":         lb.Id,
+		"slb_name":       lb.Name,
+		"project_domain": lb.ProjectDomain,
+		"region_ext_id":  lb.RegionExtId,
+		"status":         lb.Status,
+		"tenant":         lb.Project,
+		"tenant_id":      lb.ProjectId,
+		"external_id":    lb.ExternalId,
+	}
+	return ret
+}

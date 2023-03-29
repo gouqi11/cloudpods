@@ -16,12 +16,11 @@
 
 package models
 
-
 type CloudMonitorAccessList struct {
 
-    /* 是否允许选择全部 (Optional) */
-    AllowedAll bool `json:"allowedAll"`
+	/* 是否允许选择全部 (Optional) */
+	AllowedAll bool `json:"allowedAll"`
 
-    /* serviceCode列表 (Optional) */
-    ServiceCodes []CloudMonitorServiceCodeItem `json:"serviceCodes"`
+	/* serviceCode列表 (Optional) */
+	ServiceCodes []CloudMonitorServiceCodeItem `json:"serviceCodes"`
 }

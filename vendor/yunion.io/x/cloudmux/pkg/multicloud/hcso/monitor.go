@@ -354,6 +354,7 @@ func (self *SHuaweiClient) getBucketMetrics(opts *cloudprovider.MetricListOption
 }
 
 func (self *SHuaweiClient) GetMetrics(opts *cloudprovider.MetricListOptions) ([]cloudprovider.MetricValues, error) {
+	log.Infof("this is resourceType:%s", opts.ResourceType)
 	switch opts.ResourceType {
 	case cloudprovider.METRIC_RESOURCE_TYPE_SERVER:
 		return self.getServerMetrics(opts)
