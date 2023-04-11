@@ -487,6 +487,8 @@ func isHTTPReqErrorRetryable(err error) bool {
 		} else if strings.Contains(err.Error(), "net/http: timeout awaiting response headers") {
 			// Retry errors due to server not sending the response before timeout
 			return true
+		} else if strings.Contains(err.Error(), "dial tcp: lookup") {
+			return true
 		}
 	}
 	return false
@@ -552,6 +554,7 @@ func requestInternal(client sClient, ctx context.Context, method THttpMethod, ur
 		header.Set("X-Request-Id", ctxData.RequestId)
 	}
 	req, err := http.NewRequest(string(method), urlStr, body)
+
 	if err != nil {
 		return nil, nil, err
 	}
