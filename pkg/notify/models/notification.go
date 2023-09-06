@@ -163,7 +163,7 @@ func (n *SNotification) CustomizeCreate(ctx context.Context, userCred mcclient.T
 		return err
 	}
 	for i := range input.Receivers {
-		_, err := ReceiverNotificationManager.Create(ctx, userCred, input.Receivers[i], n.Id)
+		_, err := ReceiverNotificationManager.Create(ctx, userCred, input.Receivers[i], 0, n.Id)
 		if err != nil {
 			return errors.Wrap(err, "ReceiverNotificationManager.Create")
 		}
@@ -214,12 +214,15 @@ func (nm *SNotificationManager) PerformEventNotify(ctx context.Context, userCred
 	if topic == nil {
 		return output, nil
 	}
-	var receiverIds []string
+	receiverIds := make(map[string]uint32)
 	receiverIds1, err := SubscriberManager.getReceiversSent(ctx, topic.Id, input.ProjectDomainId, input.ProjectId)
 	if err != nil {
 		return output, errors.Wrap(err, "unable to get receive")
 	}
-	receiverIds = append(receiverIds, receiverIds1...)
+	for k, v := range receiverIds1 {
+		receiverIds[k] = v
+	}
+	// receiverIds = append(receiverIds, receiverIds1...)
 	// robot
 	var robots []string
 	_robots, err := SubscriberManager.robot(topic.Id, input.ProjectDomainId, input.ProjectId)
@@ -252,10 +255,19 @@ func (nm *SNotificationManager) PerformEventNotify(ctx context.Context, userCred
 
 	// append default receiver
 	if len(input.Event) == 0 {
-		receiverIds = append(receiverIds, input.ReceiverIds...)
+		for _, receiver := range input.ReceiverIds {
+			// receiverIds = append(receiverIds, api.SReceiverWithGroupTimes{ReceiverId: receiver})
+			if _, ok := receiverIds[receiver]; !ok {
+				receiverIds[receiver] = 0
+			}
+		}
 	}
 	// fillter non-existed receiver
-	receivers, err := ReceiverManager.FetchByIdOrNames(ctx, receiverIds...)
+	receiverIdList := []string{}
+	for k, _ := range receiverIds {
+		receiverIdList = append(receiverIdList, k)
+	}
+	receivers, err := ReceiverManager.FetchByIdOrNames(ctx, receiverIdList...)
 	if err != nil {
 		return output, errors.Wrap(err, "unable to fetch receivers by ids")
 	}
@@ -264,14 +276,17 @@ func (nm *SNotificationManager) PerformEventNotify(ctx context.Context, userCred
 	for i := range receivers {
 		idSet.Insert(receivers[i].Id)
 	}
-	for _, re := range receiverIds {
-		if idSet.Has(re) {
-			continue
-		}
+	for re := range receiverIds {
+		// if idSet.Has(re) {
+		// 	continue
+		// }
 		webconsoleContacts.Insert(re)
 	}
-	receiverIds = idSet.UnsortedList()
-
+	// receiverIds = idSet.UnsortedList()
+	realReceiverIds := make(map[string]uint32)
+	for _, id := range receiverIdList {
+		realReceiverIds[id] = receiverIds[id]
+	}
 	// create event
 	event, err := EventManager.CreateEvent(ctx, input.Event, topic.Id, message, string(input.Action), input.ResourceType, input.AdvanceDays)
 	if err != nil {
@@ -280,7 +295,7 @@ func (nm *SNotificationManager) PerformEventNotify(ctx context.Context, userCred
 
 	if nm.needWebconsole([]STopic{*topic}) {
 		// webconsole
-		err = nm.create(ctx, userCred, api.WEBCONSOLE, receiverIds, webconsoleContacts.UnsortedList(), input.Priority, event.GetId(), topic.GetId(), topic.Type)
+		err = nm.create(ctx, userCred, api.WEBCONSOLE, realReceiverIds, webconsoleContacts.UnsortedList(), input.Priority, event.GetId(), topic.GetId(), topic.Type)
 		if err != nil {
 			output.FailedList = append(output.FailedList, api.FailedElem{
 				ContactType: api.WEBCONSOLE,
@@ -293,7 +308,7 @@ func (nm *SNotificationManager) PerformEventNotify(ctx context.Context, userCred
 		if ct == api.MOBILE {
 			continue
 		}
-		err := nm.create(ctx, userCred, ct, receiverIds, nil, input.Priority, event.GetId(), topic.GetId(), topic.Type)
+		err := nm.create(ctx, userCred, ct, realReceiverIds, nil, input.Priority, event.GetId(), topic.GetId(), topic.Type)
 		if err != nil {
 			output.FailedList = append(output.FailedList, api.FailedElem{
 				ContactType: ct,
@@ -328,7 +343,7 @@ func (nm *SNotificationManager) needWebconsole(topics []STopic) bool {
 	return false
 }
 
-func (nm *SNotificationManager) create(ctx context.Context, userCred mcclient.TokenCredential, contactType string, receiverIds, contacts []string, priority, eventId, topicId string, topicType string) error {
+func (nm *SNotificationManager) create(ctx context.Context, userCred mcclient.TokenCredential, contactType string, receiverIds map[string]uint32, contacts []string, priority, eventId, topicId string, topicType string) error {
 	if len(receiverIds)+len(contacts) == 0 {
 		return nil
 	}
@@ -346,8 +361,8 @@ func (nm *SNotificationManager) create(ctx context.Context, userCred mcclient.To
 	if err != nil {
 		return errors.Wrap(err, "unable to insert Notification")
 	}
-	for i := range receiverIds {
-		_, err := ReceiverNotificationManager.Create(ctx, userCred, receiverIds[i], n.Id)
+	for receiver := range receiverIds {
+		_, err := ReceiverNotificationManager.Create(ctx, userCred, receiver, receiverIds[receiver], n.Id)
 		if err != nil {
 			return errors.Wrap(err, "ReceiverNotificationManager.Create")
 		}
@@ -430,7 +445,7 @@ func (nm *SNotificationManager) createWithRobots(ctx context.Context, userCred m
 	return nil
 }
 
-func (n *SNotification) Create(ctx context.Context, userCred mcclient.TokenCredential, receiverIds, contacts []string) error {
+func (n *SNotification) Create(ctx context.Context, userCred mcclient.TokenCredential, receiverIds []api.SReceiverWithGroupTimes, contacts []string) error {
 	if len(receiverIds)+len(contacts) == 0 {
 		return nil
 	}
@@ -441,7 +456,7 @@ func (n *SNotification) Create(ctx context.Context, userCred mcclient.TokenCrede
 		return errors.Wrap(err, "unable to insert Notification")
 	}
 	for i := range receiverIds {
-		_, err := ReceiverNotificationManager.Create(ctx, userCred, receiverIds[i], n.Id)
+		_, err := ReceiverNotificationManager.Create(ctx, userCred, receiverIds[i].ReceiverId, receiverIds[i].GroupTimes, n.Id)
 		if err != nil {
 			return errors.Wrap(err, "ReceiverNotificationManager.Create")
 		}
@@ -713,7 +728,6 @@ func (n *SNotification) GetTemplate(ctx context.Context, topicId, lang string, n
 		groupKeys = *topic.GroupKeys
 	}
 
-	out.GroupTimes = uint(topic.GroupTimes)
 	rtStr, aStr, resultStr := event.ResourceType(), string(event.Action()), string(event.Result())
 	msgObj, err := jsonutils.ParseString(no.Message)
 	if err != nil {
@@ -741,7 +755,6 @@ func (n *SNotification) GetTemplate(ctx context.Context, topicId, lang string, n
 			out.GroupKey += keyValue
 		}
 	}
-	out.GroupTimes = uint(topic.GroupTimes)
 	if lang == "" {
 		lang = getLangSuffix(ctx)
 	}

@@ -147,3 +147,8 @@ type FailedElem struct {
 	ContactType string
 	Reason      string
 }
+
+type SReceiverWithGroupTimes struct {
+	ReceiverId string
+	GroupTimes uint32
+}
