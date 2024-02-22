@@ -345,7 +345,7 @@ func createTimeTicker(ctx context.Context, driver models.ISenderDriver, params a
 			input := arrValue.(apis.SNotificationGroupSearchInput)
 			// 组装聚合后的消息
 			sendParams, err := models.NotificationGroupManager.TaskSend(ctx, input)
-			if err != nil {
+			if err != nil && sendParams != nil {
 				log.Errorln("TaskSend err:", err)
 				return
 			}

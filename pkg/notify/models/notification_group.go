@@ -17,10 +17,12 @@ package models // import "yunion.io/x/onecloud/pkg/notify/models"
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"yunion.io/x/jsonutils"
 	"yunion.io/x/pkg/errors"
+	"yunion.io/x/sqlchemy"
 
 	apis "yunion.io/x/onecloud/pkg/apis/notify"
 	"yunion.io/x/onecloud/pkg/cloudcommon/consts"
@@ -104,6 +106,13 @@ func (ng *SNotificationGroupManager) TaskSend(ctx context.Context, input apis.SN
 	if len(ngs) <= 1 {
 		return nil, errors.Wrapf(errors.ErrNotFound, "notification groups just found :%d", len(ngs))
 	}
+	defer func() {
+		ids := []string{}
+		for i := 0; i < len(ngs); i++ {
+			ids = append(ids, fmt.Sprintf("%d", ngs[i].Id))
+		}
+		sqlchemy.Exec(fmt.Sprintf("delete from notification_groups_tbl where id in (%s)", strings.Join(ids, ",")))
+	}()
 	sendParams := &apis.SendParams{
 		Body:       ngs[0].Body,
 		Header:     ngs[0].Header,
@@ -131,6 +140,9 @@ func (ng *SNotificationGroupManager) TaskSend(ctx context.Context, input apis.SN
 			Body:    msg,
 			To:      []string{ngs[0].Contact},
 		}
+	}
+	if len(sendParams.Message) == 0 && len(sendParams.EmailMsg.Body) == 0 {
+		return nil, nil
 	}
 	return sendParams, nil
 }
