@@ -196,6 +196,7 @@ type NotifyConfig struct {
 	SNotifyConfigContent
 	Attribution string
 	DomainId    string
+	Receiver    string
 }
 
 func (self *NotifyConfig) GetDomainId() string {
@@ -226,6 +227,10 @@ type SNotifyConfigContent struct {
 	//AppSecret string
 	AppKey string
 	// sms
+	VerifiyCode     string
+	AlertsCode      string
+	ErrorCode       string
+	PhoneNumber     string
 	AccessKeyId     string
 	AccessKeySecret string
 	ServiceUrl      string

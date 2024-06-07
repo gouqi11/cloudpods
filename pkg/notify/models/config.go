@@ -166,11 +166,15 @@ func (c *SConfig) ValidateUpdateData(ctx context.Context, userCred mcclient.Toke
 	// check if changed
 	if input.Content != nil {
 		driver := GetDriver(c.Type)
-		message, err := driver.ValidateConfig(ctx, api.NotifyConfig{
+		verifyInfo := api.NotifyConfig{
 			DomainId:             c.DomainId,
 			Attribution:          c.Attribution,
 			SNotifyConfigContent: *input.Content,
-		})
+		}
+		verifyInfo.VerifiyCode = input.Content.VerifiyCode
+		verifyInfo.AlertsCode = input.Content.AlertsCode
+		verifyInfo.ErrorCode = input.Content.ErrorCode
+		message, err := driver.ValidateConfig(ctx, verifyInfo)
 		if err != nil {
 			return input, errors.Wrapf(err, message)
 		}
@@ -367,10 +371,11 @@ func (cm *SConfigManager) PerformValidate(ctx context.Context, userCred mcclient
 	}
 	// validate
 	driver := GetDriver(input.Type)
-	message, err := driver.ValidateConfig(ctx, api.NotifyConfig{
+	validateConfig := api.NotifyConfig{
 		SNotifyConfigContent: *input.Content,
 		DomainId:             userCred.GetDomainId(),
-	})
+	}
+	message, err := driver.ValidateConfig(ctx, validateConfig)
 	if err != nil {
 		return output, errors.Wrapf(err, message)
 	}
